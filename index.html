@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <title>Material Design for Bootstrap</title>
+    <!-- MDB icon -->
+    <link rel="icon" href="img/mdb-favicon.ico" type="image/x-icon" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.11.2/css/all.css" />
+    <!-- Google Fonts Roboto -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+    />
+    <!-- MDB ESSENTIAL -->
+    <link rel="stylesheet" href="css/mdb.min.css" />
+    <!-- MDB PLUGINS -->
+    <link rel="stylesheet" href="plugins/css/all.min.css" />
+    <!-- Custom styles -->
+    <style></style>
+  </head>
+
+  <body class='bg-light'>
+    <!-- Start your project here-->
+<div class="container my-5">
+      <!-- Section: Global Summary -->
+      <section class="mb-5">
+
+        <div class="card">
+          <div class="card-body">
+            <h4 class="text-center mb-4">Global Summary</h4>
+        <div id="datatable" data-mdb-loading="true"></div>
+            
+          </div>
+        </div>
+        
+        
+        </section>
+        <!-- Section: Global Summary End -->
+    
+        <!-- Section: Graph -->
+        <section class="mb-5">
+    
+          <div class="card">
+            <div class="card-body">
+            <h4 class="text-center mb-4">Graph</h4>
+    
+              <canvas id="chart-async-data-example"></canvas>
+
+            </div>
+          </div>
+        
+        </section>
+        <!-- Section: Graph End -->
+    
+        <!-- Section: Map -->
+        <section class="mb-5">
+    
+          <div class="card">
+            <div class="card-body">
+            <h4 class="text-center mb-4">Global Cases</h4>
+            <div class="row m-0"">
+              <div class="col-4 border-end border-bottom border-light">
+                <ul id="legend-json" class="vector-map-legend px-3"></ul>
+              </div>
+              <div class="col-8 p-0">
+                <div id="map-json"></div>
+              </div>
+            </div>
+    
+              
+            </div>
+          </div>
+        
+        
+        
+        </section>
+        <!-- Section: Map End -->
+</div>
+
+    <!-- End your project here-->
+  </body>
+
+  <!-- MDB ESSENTIAL -->
+  <script type="text/javascript" src="js/mdb.min.js"></script>
+  <!-- MDB PLUGINS -->
+  <script type="text/javascript" src="plugins/js/all.min.js"></script>
+  <!-- Custom code-->
+  <script type="text/javascript">
+
+  // data table 
+    const columns = [
+  { label: 'New Confirmed', field: 'NewConfirmed' },
+  { label: 'Total Confirmed', field: 'TotalConfirmed' },
+  { label: 'New Deaths', field: 'NewDeaths' },
+  { label: 'TotalDeaths', field: 'TotalDeaths' },
+  { label: 'New Recovered', field: 'NewRecovered' },
+  { label: 'Total Recovered', field: 'TotalRecovered' },
+];
+
+const asyncTable = new mdb.Datatable(
+  document.getElementById('datatable'),
+  {
+    columns,
+  },
+  { loading: true }
+);
+
+fetch('https://api.covid19api.com/summary')
+  .then((response) => response.json())
+  .then((data) => {
+    asyncTable.update(
+      {
+        rows: [data["Global"]].map((row) => ({
+          ...row,
+        })),
+      },
+      { loading: false, pagination: false }
+    );
+  });
+  // data table end 
+
+  // charts 
+  const chart = document.getElementById('chart-async-data-example');
+const chartInstance = new mdb.Chart(chart, { type: 'bar' });
+fetch(
+  'https://api.covid19api.com/total/country/poland/status/confirmed?from=2020-10-01T00:00:00Z&to=2020-12-01T00:00:00Z'
+)
+  .then((data) => data.json())
+  .then((data) => {
+    const dataset = data.map((obj) => obj['Cases']);
+    const labels = data.map((obj) => obj['Date'].substr(0, 10));
+    chartInstance.update({
+      labels,
+      datasets: [
+        {
+          color: '#FFCDD2',
+          data: dataset,
+          label: 'Number of cases',
+          pointRadius: 0,
+          borderColor: dataset.color,
+        },
+      ],
+    });
+  });
+  // charts end 
+  </script>
+
+  <script>
+    const map = document.getElementById('map-json');
+const legendList = document.getElementById('legend-json');
+
+const getLegend = (legend) => {
+  return legend
+    .map((color, i) => {
+      let label;
+
+      if (i === 0) {
+        label = `< ${color.max}`;
+      } else if (i === legend.length - 1) {
+        label = `> ${color.min}`;
+      } else {
+        label = `${color.min} - ${color.max}`;
+      }
+
+      return `
+    <li class="vector-map-legend__item my-2">
+      <div class="vector-map-legend__color me-2 border border-light" style="background-color: ${color.color}"></div>
+      <small>${label}</small>
+    </li>
+    `;
+    })
+    .join('\n');
+};
+
+const vectorMapInstance = new VectorMap(map, {
+  fill: 'rgb(26, 113, 255)',
+  tooltips: true,
+  stroke: '#fff',
+  btnClass: 'btn-light',
+  readonly: true,
+  hover: false,
+});
+
+fetch('https://api.covid19api.com/summary')
+  .then((data) => data.json())
+  .then((data) => {
+    const parser = new DataParser('vectorMap', 'json', {
+      color: [
+        'rgba(26, 113, 255, 0.55)',
+        'rgba(26, 113, 255, 0.6)',
+        'rgba(26, 113, 255, 0.65)',
+        'rgba(26, 113, 255, 0.7)',
+        'rgba(26, 113, 255, 0.75)',
+        'rgba(26, 113, 255, 0.8)',
+        'rgba(26, 113, 255, 0.85)',
+        'rgba(26, 113, 255, 0.9)',
+        'rgba(26, 113, 255, 0.95)',
+        'rgba(26, 113, 255, 0.1)',
+      ],
+      field: 'TotalConfirmed',
+      step: 8000000,
+      countryIdentifier: 'Country',
+      tooltips: (value) => `Cases: ${value}`,
+    });
+
+    const { colorMap, legend } = parser.parse(data['Countries']);
+
+    legendList.innerHTML = getLegend(legend);
+
+    vectorMapInstance.update({
+      colorMap,
+      markers: [
+        {
+          ...parser.getMapCoordinates(52.107811, 19.94487),
+          fill: 'rgb(185, 211, 220)',
+          type: 'bullet',
+          label: 'Warsaw',
+          latitude:  52.2297,
+          longitude: 21.0122,
+        },
+      ],
+    });
+  });
+  </script>
+</html>

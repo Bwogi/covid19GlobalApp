@@ -1,1 +1,1 @@
-# covid19GlobalApp
+# covid19 Global
